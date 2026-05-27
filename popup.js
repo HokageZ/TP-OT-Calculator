@@ -570,7 +570,10 @@
         updateStatusMsg.className = 'status-msg';
 
         fetch('https://raw.githubusercontent.com/HokageZ/TP-OT-Calculator/master/manifest.json')
-          .then(function (r) { return r.json(); })
+          .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+          })
           .then(function (remote) {
             var current = chrome.runtime.getManifest().version;
             if (remote.version !== current) {
