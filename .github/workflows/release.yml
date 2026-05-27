@@ -40,6 +40,16 @@ jobs:
         run: |
           zip -r tp-ot-calculator-v${{ env.VERSION }}.zip . -x "*.git*" "*.github*" "logo.jpeg" "README.md"
 
+      - name: Generate updates.xml
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          echo "<?xml version='1.0' encoding='UTF-8'?>" > updates.xml
+          echo "<gupdate xmlns='http://www.google.com/update2/response' protocol='2.0'>" >> updates.xml
+          echo "  <app appid='kdjflkdfjlkdfjlkdfjlkdfjlkdfjlkdf'>" >> updates.xml
+          echo "    <updatecheck codebase='https://github.com/${{ github.repository }}/releases/download/v${{ env.VERSION }}/tp-ot-calculator-v${{ env.VERSION }}.zip' version='${{ env.VERSION }}' />" >> updates.xml
+          echo "  </app>" >> updates.xml
+          echo "</gupdate>" >> updates.xml
+
       - name: Create Release
         if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
@@ -47,6 +57,8 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: v${{ env.VERSION }} Stable
           body: "Automated stable release generated for version v${{ env.VERSION }}."
-          files: tp-ot-calculator-v${{ env.VERSION }}.zip
+          files: |
+            tp-ot-calculator-v${{ env.VERSION }}.zip
+            updates.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
