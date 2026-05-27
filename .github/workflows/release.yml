@@ -1,0 +1,52 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - 'manifest.json'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Parse manifest version
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./manifest.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if Release Exists
+        id: check_release
+        run: |
+          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ env.VERSION }})
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release v${{ env.VERSION }} already exists. Skipping release creation."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Zip Archive
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          zip -r tp-ot-calculator-v${{ env.VERSION }}.zip . -x "*.git*" "*.github*" "logo.jpeg" "README.md"
+
+      - name: Create Release
+        if: steps.check_release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: v${{ env.VERSION }} Stable
+          body: "Automated stable release generated for version v${{ env.VERSION }}."
+          files: tp-ot-calculator-v${{ env.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
