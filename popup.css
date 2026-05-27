@@ -11,6 +11,32 @@ body {
 
 .popup { display: flex; flex-direction: column; }
 
+.tabs {
+  display: flex;
+  background: #f4f6f9;
+  border-bottom: 1px solid #e5e9ef;
+}
+
+.tab-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #667;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tab-btn.active {
+  color: #1a1a2e;
+  background: #fff;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
 
 /* ─── HEADER ─── */
 .header {
@@ -232,6 +258,27 @@ body {
 }
 .input-wrap input::-webkit-inner-spin-button,
 .input-wrap input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.select-wrap {
+  border: 1.5px solid #d5dae0;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.select-wrap:focus-within { border-color: #1a1a2e; }
+
+.select-wrap select {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 9px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+  font-family: inherit;
+  background: #fff;
+}
 
 
 #saveBtn {

@@ -22,7 +22,7 @@
   function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
   function loadSettings(cb) {
-    chrome.storage.sync.get({ hourlyRate: 50 }, function (items) { cb(items); });
+    chrome.storage.sync.get({ hourlyRate: 50, weekStart: 'Mon' }, function (items) { cb(items); });
   }
 
   function saveSettings(settings, cb) {
@@ -254,6 +254,7 @@
     h += '<div class="summary">';
     h += '<div class="sum-row"><span>Total OT</span><span class="sum-big">' + fmt(grandHrs) + ' hrs</span></div>';
     h += '<div class="sum-row"><span>Rate</span><span>' + money(hourlyRate) + '/hr</span></div>';
+    h += '<div class="sum-row"><span>Week starts</span><span>' + esc(data.weekStart) + '</span></div>';
     h += '</div>';
     h += '<div class="pay-box"><span>Total Pay</span><span class="pay-val">' + money(totalPay) + '</span></div>';
 
@@ -303,6 +304,13 @@
     document.getElementById('results').innerHTML = '<div class="error">' + esc(msg) + '</div>';
   }
 
+  function setActiveTab(tabId) {
+    var buttons = document.querySelectorAll('.tab-btn');
+    var panels = document.querySelectorAll('.tab-panel');
+    for (var i = 0; i < buttons.length; i++) buttons[i].classList.toggle('active', buttons[i].getAttribute('data-tab') === tabId);
+    for (var j = 0; j < panels.length; j++) panels[j].classList.toggle('active', panels[j].id === tabId);
+  }
+
   function fetchAndRender(settings) {
     document.getElementById('results').innerHTML = '<div class="loading">Scanning schedule...</div>';
 
@@ -326,7 +334,7 @@
             if (!res || !res.days) continue;
             if (!best || res.days.length > best.days.length) best = res;
           }
-          handleResult(best || { days: [], weekRange: '' }, settings.hourlyRate);
+          handleResult(best || { days: [], weekRange: '' }, settings);
         });
       } else {
         chrome.tabs.sendMessage(tab.id, { action: 'parseSchedule' }, function (response) {
@@ -334,43 +342,54 @@
             showError('Cannot read page. Reload the extension and refresh the schedule page.');
             return;
           }
-          handleResult(response, settings.hourlyRate);
+          handleResult(response, settings);
         });
       }
     });
   }
 
-  function handleResult(data, hourlyRate) {
+  function handleResult(data, settings) {
     if (!data) { showError('No data returned from page.'); return; }
     if (!data.days || data.days.length === 0) {
       showError('No schedule found.');
       return;
     }
-    render(applyWeekStart(data, 'Mon'), hourlyRate);
+    render(applyWeekStart(data, settings.weekStart), settings.hourlyRate);
   }
 
   document.addEventListener('DOMContentLoaded', function () {
     var rateInput = document.getElementById('hourlyRate');
+    var weekStartInput = document.getElementById('weekStart');
     var saveBtn = document.getElementById('saveBtn');
     var statusMsg = document.getElementById('statusMsg');
+    var tabButtons = document.querySelectorAll('.tab-btn');
+
+    for (var i = 0; i < tabButtons.length; i++) {
+      tabButtons[i].addEventListener('click', function () {
+        setActiveTab(this.getAttribute('data-tab'));
+      });
+    }
 
     loadSettings(function (settings) {
       rateInput.value = settings.hourlyRate;
+      weekStartInput.value = settings.weekStart;
       fetchAndRender(settings);
     });
 
     saveBtn.addEventListener('click', function () {
       var rate = parseFloat(rateInput.value);
+      var weekStart = weekStartInput.value;
       if (isNaN(rate) || rate < 0) {
         statusMsg.textContent = 'Enter a valid rate.';
         statusMsg.className = 'status-msg err';
         return;
       }
-      saveSettings({ hourlyRate: rate }, function () {
+      saveSettings({ hourlyRate: rate, weekStart: weekStart }, function () {
         statusMsg.textContent = 'Saved!';
         statusMsg.className = 'status-msg ok';
         setTimeout(function () { statusMsg.textContent = ''; }, 2000);
-        fetchAndRender({ hourlyRate: rate });
+        fetchAndRender({ hourlyRate: rate, weekStart: weekStart });
+        setActiveTab('resultsTab');
       });
     });
 

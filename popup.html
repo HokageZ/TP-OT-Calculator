@@ -18,25 +18,48 @@
       </div>
     </div>
 
-    <div id="weekRange" class="week-range"></div>
-
-    <div id="results" class="results">
-      <div class="loading" id="loading">Scanning schedule...</div>
+    <div class="tabs" role="tablist" aria-label="Popup Sections">
+      <button id="resultsTabBtn" class="tab-btn active" type="button" data-tab="resultsTab">Results</button>
+      <button id="settingsTabBtn" class="tab-btn" type="button" data-tab="settingsTab">Settings</button>
     </div>
 
-    <div class="divider"></div>
+    <div id="resultsTab" class="tab-panel active">
+      <div id="weekRange" class="week-range"></div>
 
-    <div class="settings">
-      <div class="settings-title">Settings</div>
-      <div class="field">
-        <label for="hourlyRate">Hourly Rate (EGP)</label>
-        <div class="input-wrap">
-          <span class="prefix">EGP</span>
-          <input type="number" id="hourlyRate" min="0" step="0.01" value="50" />
-        </div>
+      <div id="results" class="results">
+        <div class="loading" id="loading">Scanning schedule...</div>
       </div>
-      <button id="saveBtn">Save & Recalculate</button>
-      <div id="statusMsg" class="status-msg"></div>
+    </div>
+
+    <div id="settingsTab" class="tab-panel">
+      <div class="divider"></div>
+
+      <div class="settings">
+        <div class="settings-title">Settings</div>
+        <div class="field">
+          <label for="hourlyRate">Hourly Rate (EGP)</label>
+          <div class="input-wrap">
+            <span class="prefix">EGP</span>
+            <input type="number" id="hourlyRate" min="0" step="0.01" value="50" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="weekStart">Week Starts On</label>
+          <div class="select-wrap">
+            <select id="weekStart">
+              <option value="Sun">Sunday</option>
+              <option value="Mon">Monday</option>
+              <option value="Tue">Tuesday</option>
+              <option value="Wed">Wednesday</option>
+              <option value="Thu">Thursday</option>
+              <option value="Fri">Friday</option>
+              <option value="Sat">Saturday</option>
+            </select>
+          </div>
+        </div>
+        <button id="saveBtn">Save & Recalculate</button>
+        <div id="statusMsg" class="status-msg"></div>
+      </div>
     </div>
 
     <!-- FOOTER -->
