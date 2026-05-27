@@ -22,7 +22,7 @@
   function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
   function loadSettings(cb) {
-    chrome.storage.sync.get({ hourlyRate: 50, weekStart: 'Mon' }, function (items) { cb(items); });
+    chrome.storage.sync.get({ hourlyRate: 50, weekStart: 'Mon', bonusThreshold: 9 }, function (items) { cb(items); });
   }
 
   function saveSettings(settings, cb) {
@@ -235,10 +235,14 @@
     return { totals: totals, grand: totals.ot_rta + totals.ot_sched + totals.dayoff_rta + totals.dayoff_sched, dayRows: dayRows };
   }
 
-  function render(data, hourlyRate) {
+  function render(data, settings) {
     var res = calculate(data);
     var grandHrs = toHrs(res.grand);
-    var totalPay = grandHrs * hourlyRate;
+    var bonusThresholdMin = Math.max(1, Math.round(settings.bonusThreshold * 60));
+    var bonusMin = Math.floor(res.grand / bonusThresholdMin) * 60;
+    var bonusHrs = toHrs(bonusMin);
+    var payableHrs = toHrs(res.grand + bonusMin);
+    var totalPay = payableHrs * settings.hourlyRate;
     var h = '';
 
     h += '<div class="section-title">OT Breakdown</div>';
@@ -253,7 +257,10 @@
 
     h += '<div class="summary">';
     h += '<div class="sum-row"><span>Total OT</span><span class="sum-big">' + fmt(grandHrs) + ' hrs</span></div>';
-    h += '<div class="sum-row"><span>Rate</span><span>' + money(hourlyRate) + '/hr</span></div>';
+    h += '<div class="sum-row"><span>Bonus Hours</span><span>' + fmt(bonusHrs) + ' hrs</span></div>';
+    h += '<div class="sum-row"><span>Payable Hours</span><span>' + fmt(payableHrs) + ' hrs</span></div>';
+    h += '<div class="sum-row"><span>Rate</span><span>' + money(settings.hourlyRate) + '/hr</span></div>';
+    h += '<div class="sum-row"><span>Bonus Threshold</span><span>' + fmt(settings.bonusThreshold) + ' hrs</span></div>';
     h += '<div class="sum-row"><span>Week starts</span><span>' + esc(data.weekStart) + '</span></div>';
     h += '</div>';
     h += '<div class="pay-box"><span>Total Pay</span><span class="pay-val">' + money(totalPay) + '</span></div>';
@@ -354,12 +361,13 @@
       showError('No schedule found.');
       return;
     }
-    render(applyWeekStart(data, settings.weekStart), settings.hourlyRate);
+    render(applyWeekStart(data, settings.weekStart), settings);
   }
 
   document.addEventListener('DOMContentLoaded', function () {
     var rateInput = document.getElementById('hourlyRate');
     var weekStartInput = document.getElementById('weekStart');
+    var bonusThresholdInput = document.getElementById('bonusThreshold');
     var saveBtn = document.getElementById('saveBtn');
     var statusMsg = document.getElementById('statusMsg');
     var tabButtons = document.querySelectorAll('.tab-btn');
@@ -373,22 +381,29 @@
     loadSettings(function (settings) {
       rateInput.value = settings.hourlyRate;
       weekStartInput.value = settings.weekStart;
+      bonusThresholdInput.value = settings.bonusThreshold;
       fetchAndRender(settings);
     });
 
     saveBtn.addEventListener('click', function () {
       var rate = parseFloat(rateInput.value);
       var weekStart = weekStartInput.value;
+      var bonusThreshold = parseFloat(bonusThresholdInput.value);
       if (isNaN(rate) || rate < 0) {
         statusMsg.textContent = 'Enter a valid rate.';
         statusMsg.className = 'status-msg err';
         return;
       }
-      saveSettings({ hourlyRate: rate, weekStart: weekStart }, function () {
+      if (isNaN(bonusThreshold) || bonusThreshold <= 0) {
+        statusMsg.textContent = 'Enter a valid bonus threshold.';
+        statusMsg.className = 'status-msg err';
+        return;
+      }
+      saveSettings({ hourlyRate: rate, weekStart: weekStart, bonusThreshold: bonusThreshold }, function () {
         statusMsg.textContent = 'Saved!';
         statusMsg.className = 'status-msg ok';
         setTimeout(function () { statusMsg.textContent = ''; }, 2000);
-        fetchAndRender({ hourlyRate: rate, weekStart: weekStart });
+        fetchAndRender({ hourlyRate: rate, weekStart: weekStart, bonusThreshold: bonusThreshold });
         setActiveTab('resultsTab');
       });
     });

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "OT Calculator",
+  "name": "!!! ابي فلوسي تستهبلون",
   "version": "1.0.0",
   "description": "Calculate overtime hours and pay from NICE WFM WebStation schedule.",
   "permissions": ["storage", "activeTab", "scripting"],
