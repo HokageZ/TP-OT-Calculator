@@ -555,6 +555,40 @@
       });
     });
 
+    // --- MANUAL UPDATER ---
+    var extVersionEl = document.getElementById('extVersion');
+    var checkUpdateBtn = document.getElementById('checkUpdateBtn');
+    var updateStatusMsg = document.getElementById('updateStatusMsg');
+
+    if (extVersionEl && chrome.runtime.getManifest) {
+      extVersionEl.textContent = chrome.runtime.getManifest().version;
+    }
+
+    if (checkUpdateBtn) {
+      checkUpdateBtn.addEventListener('click', function () {
+        updateStatusMsg.textContent = 'Checking...';
+        updateStatusMsg.className = 'status-msg';
+
+        fetch('https://raw.githubusercontent.com/HokageZ/TP-OT-Calculator/master/manifest.json')
+          .then(function (r) { return r.json(); })
+          .then(function (remote) {
+            var current = chrome.runtime.getManifest().version;
+            if (remote.version !== current) {
+              updateStatusMsg.textContent = 'Update available: v' + remote.version + '. Open Chrome Extensions page to update.';
+              updateStatusMsg.className = 'status-msg ok';
+            } else {
+              updateStatusMsg.textContent = 'Up to date!';
+              updateStatusMsg.className = 'status-msg ok';
+              setTimeout(function () { updateStatusMsg.textContent = ''; }, 3000);
+            }
+          })
+          .catch(function (err) {
+            updateStatusMsg.textContent = 'Check failed. Reload and try again.';
+            updateStatusMsg.className = 'status-msg err';
+          });
+      });
+    }
+
     rateInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') saveBtn.click();
     });

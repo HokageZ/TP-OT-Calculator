@@ -5,6 +5,7 @@
   "description": "Calculate overtime hours and pay from NICE WFM WebStation schedule.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": ["https://tp-eg.nicecloudsvc.com/*"],
+  "update_url": "https://raw.githubusercontent.com/HokageZ/TP-OT-Calculator/master/updates.xml",
   "content_scripts": [
     {
       "matches": ["https://tp-eg.nicecloudsvc.com/*"],
