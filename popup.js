@@ -262,7 +262,9 @@
 
     for (var d = 0; d < sourceDays.length; d++) {
       var day = sourceDays[d];
-      var currentDay = dayMap[day.date];
+      var lastStartMin = -1;
+      var rolloverDays = 0;
+
       for (var a = 0; a < day.activities.length; a++) {
         var act = day.activities[a];
         var startMin = parseTime12h(act.start);
@@ -270,28 +272,55 @@
 
         if (startMin === null || endMin === null) continue;
 
-        if (endMin > startMin) {
-          currentDay.activities.push(act);
-          continue;
+        // Detect if the time has wrapped around midnight relative to the previous activity
+        if (lastStartMin !== -1 && startMin < lastStartMin) {
+          rolloverDays++;
+        }
+        lastStartMin = startMin;
+
+        // Calculate absolute day offsets for start and end times
+        var actStartRollover = rolloverDays;
+        var actEndRollover = rolloverDays;
+        if (endMin < startMin) {
+          actEndRollover++;
         }
 
-        currentDay.activities.push({
-          name: act.name,
-          start: act.start,
-          end: '12:00 AM',
-          category: act.category,
-          minutes: 1440 - startMin
-        });
+        // Helper to get day map for a specific date offset
+        function getTargetDay(offset) {
+          var targetDate = parseShortDate(day.date);
+          if (!targetDate) return null;
+          targetDate.setDate(targetDate.getDate() + offset);
+          var targetKey = formatShortDate(targetDate);
+          return dayMap[targetKey] || null;
+        }
 
-        var nextDay = dayMap[nextDateKey(day.date)];
-        if (nextDay) {
-          nextDay.activities.push({
-            name: act.name,
-            start: '12:00 AM',
-            end: act.end,
-            category: act.category,
-            minutes: endMin
-          });
+        if (actStartRollover === actEndRollover) {
+          var targetDay = getTargetDay(actStartRollover);
+          if (targetDay) {
+            targetDay.activities.push(act);
+          }
+        } else {
+          // Split at midnight
+          var firstDay = getTargetDay(actStartRollover);
+          if (firstDay) {
+            firstDay.activities.push({
+              name: act.name,
+              start: act.start,
+              end: '12:00 AM',
+              category: act.category,
+              minutes: 1440 - startMin
+            });
+          }
+          var secondDay = getTargetDay(actEndRollover);
+          if (secondDay) {
+            secondDay.activities.push({
+              name: act.name,
+              start: '12:00 AM',
+              end: act.end,
+              category: act.category,
+              minutes: endMin
+            });
+          }
         }
       }
     }
