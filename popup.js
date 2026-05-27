@@ -285,23 +285,36 @@
           actEndRollover++;
         }
 
-        // Helper to get day map for a specific date offset
-        function getTargetDay(offset) {
+        // Helper to get or create target day (ensures no spillovers are discarded)
+        function getOrCreateTargetDay(offset) {
           var targetDate = parseShortDate(day.date);
           if (!targetDate) return null;
           targetDate.setDate(targetDate.getDate() + offset);
           var targetKey = formatShortDate(targetDate);
-          return dayMap[targetKey] || null;
+          
+          if (!dayMap[targetKey]) {
+            var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            var dayName = dayNames[targetDate.getDay()];
+            var newDay = {
+              day: dayName,
+              date: targetKey,
+              label: dayName + ' ' + targetKey,
+              activities: []
+            };
+            clonedDays.push(newDay);
+            dayMap[targetKey] = newDay;
+          }
+          return dayMap[targetKey];
         }
 
         if (actStartRollover === actEndRollover) {
-          var targetDay = getTargetDay(actStartRollover);
+          var targetDay = getOrCreateTargetDay(actStartRollover);
           if (targetDay) {
             targetDay.activities.push(act);
           }
         } else {
           // Split at midnight
-          var firstDay = getTargetDay(actStartRollover);
+          var firstDay = getOrCreateTargetDay(actStartRollover);
           if (firstDay) {
             firstDay.activities.push({
               name: act.name,
@@ -311,7 +324,7 @@
               minutes: 1440 - startMin
             });
           }
-          var secondDay = getTargetDay(actEndRollover);
+          var secondDay = getOrCreateTargetDay(actEndRollover);
           if (secondDay) {
             secondDay.activities.push({
               name: act.name,
