@@ -21,6 +21,39 @@
   function money(n) { return 'EGP ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+  function parseTime12h(str) {
+    if (!str) return null;
+    str = str.replace(/\s+/g, ' ').trim();
+    var m = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!m) return null;
+    var h = parseInt(m[1], 10);
+    var min = parseInt(m[2], 10);
+    var ampm = m[3].toUpperCase();
+    if (ampm === 'AM' && h === 12) h = 0;
+    if (ampm === 'PM' && h !== 12) h += 12;
+    return h * 60 + min;
+  }
+
+  function parseShortDate(str) {
+    var m = str && str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (!m) return null;
+    var year = parseInt(m[3], 10);
+    if (year < 100) year += 2000;
+    return new Date(year, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+  }
+
+  function formatShortDate(date) {
+    var year = String(date.getFullYear()).slice(-2);
+    return (date.getMonth() + 1) + '/' + date.getDate() + '/' + year;
+  }
+
+  function nextDateKey(dateStr) {
+    var date = parseShortDate(dateStr);
+    if (!date) return null;
+    date.setDate(date.getDate() + 1);
+    return formatShortDate(date);
+  }
+
   function loadSettings(cb) {
     chrome.storage.sync.get({ hourlyRate: 50, weekStart: 'Mon', bonusThreshold: 9 }, function (items) { cb(items); });
   }
@@ -215,6 +248,61 @@
     };
   }
 
+  function applyCalendarRule(data) {
+    var sourceDays = data.days || [];
+    var clonedDays = [];
+    var dayMap = {};
+
+    for (var i = 0; i < sourceDays.length; i++) {
+      var srcDay = sourceDays[i];
+      var clonedDay = { day: srcDay.day, date: srcDay.date, label: srcDay.label, activities: [] };
+      clonedDays.push(clonedDay);
+      dayMap[srcDay.date] = clonedDay;
+    }
+
+    for (var d = 0; d < sourceDays.length; d++) {
+      var day = sourceDays[d];
+      var currentDay = dayMap[day.date];
+      for (var a = 0; a < day.activities.length; a++) {
+        var act = day.activities[a];
+        var startMin = parseTime12h(act.start);
+        var endMin = parseTime12h(act.end);
+
+        if (startMin === null || endMin === null) continue;
+
+        if (endMin > startMin) {
+          currentDay.activities.push(act);
+          continue;
+        }
+
+        currentDay.activities.push({
+          name: act.name,
+          start: act.start,
+          end: '12:00 AM',
+          category: act.category,
+          minutes: 1440 - startMin
+        });
+
+        var nextDay = dayMap[nextDateKey(day.date)];
+        if (nextDay) {
+          nextDay.activities.push({
+            name: act.name,
+            start: '12:00 AM',
+            end: act.end,
+            category: act.category,
+            minutes: endMin
+          });
+        }
+      }
+    }
+
+    return {
+      weekRange: data.weekRange,
+      weekStart: data.weekStart,
+      days: clonedDays
+    };
+  }
+
   function calculate(data) {
     var totals = { ot_rta: 0, ot_sched: 0, dayoff_rta: 0, dayoff_sched: 0 };
     var dayRows = [];
@@ -361,7 +449,7 @@
       showError('No schedule found.');
       return;
     }
-    render(applyWeekStart(data, settings.weekStart), settings);
+    render(applyCalendarRule(applyWeekStart(data, settings.weekStart)), settings);
   }
 
   document.addEventListener('DOMContentLoaded', function () {
