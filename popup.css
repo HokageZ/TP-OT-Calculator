@@ -37,7 +37,6 @@ body {
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
-
 /* ─── HEADER ─── */
 .header {
   display: flex;
@@ -279,7 +278,6 @@ body {
   font-family: inherit;
   background: #fff;
 }
-
 
 #saveBtn {
   width: 100%;
