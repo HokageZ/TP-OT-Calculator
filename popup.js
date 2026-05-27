@@ -577,7 +577,8 @@
           .then(function (remote) {
             var current = chrome.runtime.getManifest().version;
             if (remote.version !== current) {
-              updateStatusMsg.textContent = 'Update available: v' + remote.version + '. Open Chrome Extensions page to update.';
+              var downloadUrl = 'https://github.com/HokageZ/TP-OT-Calculator/releases/download/v' + remote.version + '/tp-ot-calculator-v' + remote.version + '.zip';
+              updateStatusMsg.innerHTML = 'Update available: v' + remote.version + '<br><a href="' + downloadUrl + '" target="_blank" style="color:#e6c54a; font-weight:700; text-decoration:underline;">Click here to download new ZIP</a><br>Then drag the new files into your extension folder.';
               updateStatusMsg.className = 'status-msg ok';
             } else {
               updateStatusMsg.textContent = 'Up to date!';
