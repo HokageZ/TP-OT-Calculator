@@ -338,6 +338,13 @@
       }
     }
 
+    // Chronologically sort activities inside each day to merge rollover work seamlessly
+    for (var k = 0; k < clonedDays.length; k++) {
+      clonedDays[k].activities.sort(function (a, b) {
+        return parseTime12h(a.start) - parseTime12h(b.start);
+      });
+    }
+
     return {
       weekRange: data.weekRange,
       weekStart: data.weekStart,
